@@ -11,41 +11,41 @@
 - describe how infra/configs of backend will be implemented
 - describe front-end design
 
-#### key terms
+#### Key Terms
 
 - an Elxir *user* is the fundamental unit of login
 	- may have read/write access to one or more entities
 		- for example, a patient may have access to both their own patient entity and also their child's
 - an Elxir *entity* is either a patient or physician (office)
 	- has a number of public keys it uses to send and receive Envelopes
-- a Libri *author* is the entity that shares an Envelope with a *reader*
+- a Libri *author* is the entity that sents an Envelope to a *reader*
 - Libri document types
-	- [Document](https://github.com/drausin/libri/blob/develop/libri/librarian/api/documents.proto) is the unit of upload/download in Elxir, it is either an Entry, an Envelope, or a Page
-	- [Entry](https://github.com/drausin/libri/blob/develop/libri/librarian/api/documents.proto#L46) contains the content of a document, either as a single Page (if size is less than 2MB) or a set of PageKeys to separate Page documents
-	- [Envelope](https://github.com/drausin/libri/blob/develop/libri/librarian/api/documents.proto#L26) is the Document type for sharing an Entry
+	- a [Document](https://github.com/drausin/libri/blob/develop/libri/librarian/api/documents.proto) is the unit of upload/download in Elxir, it is either an Entry, an Envelope, or a Page
+	- an [Entry](https://github.com/drausin/libri/blob/develop/libri/librarian/api/documents.proto#L46) contains the content of a document, either as a single Page (if size is less than 2MB) or a set of PageKeys to separate Page documents
+	- an [Envelope](https://github.com/drausin/libri/blob/develop/libri/librarian/api/documents.proto#L26) share an Entry's symmetric encryption key with a given reader
 		- contains the author and reader public keys
 		- contains the encrypted symmetric Entry encryption key
-	- [Page](https://github.com/drausin/libri/blob/develop/libri/librarian/api/documents.proto#L154) is a chunk of a document, limited to 2MB
-- a Libri [Publication](https://github.com/drausin/libri/blob/develop/libri/librarian/api/librarian.proto#L195) is created by Libri Librarian peers that store an Envelope
+	- a [Page](https://github.com/drausin/libri/blob/develop/libri/librarian/api/documents.proto#L154) is a chunk of a document, limited to 2MB
+- a Libri [Publication](https://github.com/drausin/libri/blob/develop/libri/librarian/api/librarian.proto#L195) is created by the Libri Librarian peers that store an Envelope
 	- each Librarian subscribes to the publications of other Librarians
 	- when a Librarian receives a new publication it hasn't seen before, it sends it to the Librarians subscribed to it
-	- these publications are how new storage events are gossiped around the Libri network
+	- these publications are how new Envelope storage events are gossiped around the Libri network
 
 
-#### basic frontend request types
+#### Basic Frontend Request Types
 
 The MVP frontend will need to make handful of different requests.
 - user focused
 	- authenticate a user
 	- create/update a user's contact and client device info
-	- get/update a user's timeline on a particular client
+	- refresh a user's timeline
 - entity focused
 	- entity CRUD and lookup
 	- search for an entity by some of its characteristics (e.g., name, medical record number, DOB, etc)
 	- store entity's encrypted private keys
 	- get one or more entity B public keys for entity A to use in sharing a document with entity B
 - document focused
-	- get the keys of documents sent from/to a given entity after a given date
+	- get the keys of documents sent from/to a given entity within a given date range
 	- get one or more documents by their keys
 
 The three categories of frontend requests imply three separate domains for backend services to be ordered under:
@@ -53,15 +53,15 @@ The three categories of frontend requests imply three separate domains for backe
 - entities
 - documents
 
-#### backend services
+#### Backend Services
 
 All frontend requests will initially go to the Circulation aggregation/routing service. The service will be very thin, containing no business logic. It's entire job is to route frontend requests to the appropriate backend service(s). 
 
 The Users domain will contain two services:
-- Identity manages user data
+- *Identity* manages user data
 	- endpoints
-		- get and CRUD name, contact info, client devices
-		- get and CRUD user -> entity relationships
+		- lookup and CRUD name, contact info, client devices
+		- lookup and CRUD user -> entity relationships
 		- authenticate user
 			- most likely will delegate to a 3rd party like [Auth0](https://auth0.com)
 	- storage: (GCP managed) Postgres
@@ -69,14 +69,14 @@ The Users domain will contain two services:
 		- strong consistency important
 		- DB triggers make auditing changes easy
 		- inremental backups easy
-- Timeline collects document keys that should appear in a user's timeline
+- *Timeline* collects document keys that should appear in a user's timeline
 	- endpoints
-		- update from a given last updated date
+		- get updates within a given date window
 	- storage: none
-		- service is stateless, collecting data from Catalog and Access, and Directory services described below
+		- service is stateless, collecting data from Catalog and Access services described below
 
 The Entities domain will contain two services:
-- Directory manages entity data
+- *Directory* manages entity data
 	- endpoints
 		- entity CRUD and lookup
 		- entity search
@@ -88,9 +88,9 @@ The Entities domain will contain two services:
 		- DB triggers make auditing changes easy
 		- might/prob want to be able to do joins
 		- incremental backups are easy
-- Access manages entity public keys
+- *Access* manages entity public keys
 	- endpoints
-		- add, delete, sample entity public keys
+		- add, delete, sample entity author and reader public keys
 	- storage: GCP DataStore
 		- simple single-table schema; no need for joins or aggregations
 			- queries will be simple lists by entity_id
@@ -98,8 +98,8 @@ The Entities domain will contain two services:
 		- sufficient to backup incrementally by created date
 
 The Documents domain will contain two backend services plus the Elxir's Libri Librarians:
-- Librarians are Elxir's nodes in the Libri cluster
-- Courier is the interface between Libri and the rest of the Elxir backend
+- *Librarians* are Elxir's nodes in the Libri cluster
+- *Courier* is the interface between Libri and the rest of the Elxir backend
 	- endpoints
 		- put/get document into/from cache
 			- puts don't go to Libri, just to cache and Libri put queue
