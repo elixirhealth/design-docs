@@ -80,7 +80,6 @@ The Entities domain will contain two services:
 	- endpoints
 		- entity CRUD and lookup
 		- entity search
-		- entity encrypted keychains (i.e., set of private keys)
 	- storage: (GCP managed) Postgres
 		- number of users initially will be reasonably small (i.e., less than 10M)
 		- strong consistency
