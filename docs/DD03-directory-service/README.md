@@ -1,6 +1,6 @@
 # DD03 - Directory Service
 
-This design doc describes the Directory service implmentation details, including API, storage, search, and roadmap.
+This design doc describes the Directory service implementation details, including API, storage, search, and roadmap.
 
 #### Goals
 
@@ -72,7 +72,7 @@ We considered a few main options:
 
 GCP DataStore (DS) is attractive because it offers very fast Puts/Gets along with structured attributes and high availability for both writes and reads, but queries can only involve equality and a single inequality filter, so it wouldn't be able to handle more complex search queries. Also, the history auditing and incremental backup story for DataStore is not great, so we'd have to implement much of that ourselves.
 
-If we added Elastic Search (ES) to DS, we would get ES's very powerful indexing and ranking capabilities along with its high availability. But adding ES means that now our entity data lives in two places that need to be kept in sync, something that's certainly possibly but more hassle than just having a single source of truth to handle all queries. And ES doesn't amerliorate any of the auditing or backup manual work we still would have to do with DS. Finally, we would have to host and managed ES ourselves, which of course is doable, but more of a pain than using Google-managed infra like DS and Postgres.
+If we added Elastic Search (ES) to DS, we would get ES's very powerful indexing and ranking capabilities along with its high availability. But adding ES means that now our entity data lives in two places that need to be kept in sync, something that's certainly possibly but more hassle than just having a single source of truth to handle all queries. And ES doesn't ameliorate any of the auditing or backup manual work we still would have to do with DS. Finally, we would have to host and managed ES ourselves, which of course is doable, but more of a pain than using Google-managed infra like DS and Postgres.
 
 The Postgres only option is attractive for a number of reasons: 
 - indices will allow single-entity Puts/Gets to be relatively fast (though not as fast as sub-10ms DS)
@@ -140,11 +140,11 @@ Each table described above will have a corresponding history table that tracks t
 
 The operations required to populate the history tables are managed by DB triggers:
 - on row update
-	- insert a new row into history table with `deleted_time` bound of `transaction_period` populated withe current timestamp
+	- insert a new row into history table with `deleted_time` bound of `transaction_period` populated with current timestamp
 	- delete existing row in current table
 	- insert new row (i.e., new row_id) with updated value(s) into current table
 - on row delete
-	- insert a new row into history table with `deleted_time` bound of `transaction_period` populated withe current timestamp
+	- insert a new row into history table with `deleted_time` bound of `transaction_period` populated with current timestamp
 	- delete existing row in current table
 
 Entity search will require the appropriate indices to make it efficient. "Search" encompases both auto-complete and full-search uses cases, where the former must return a few results very quickly on usually incomplete queries, and the later can be a bit slower but should be more comprehensive. In both cases, the search request will define a limit, indicating the maximum number of results to return. Search will not support paging because we believe that if the results are not found on the first page, the query should be refined.
