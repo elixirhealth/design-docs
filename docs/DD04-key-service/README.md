@@ -37,13 +37,13 @@ As far as this service is concerned, any entity B can get a sample of entity A's
 
 #### API
 
-Rather than working with individual public keys, the API defines most actions on sets of keys, since the use cases often involve working 
+Rather than working with individual public keys, the API defines most actions on sets of keys, since the use cases often involve working with more than one.
 
 Endpoints:
 - `AddPublicKeys` add a set of public keys associated with a given entity ID
 - `GetPublicKeys` returns the full key info (including entity ID) given one or more public keys
 - `DisablePublicKeys` disables one or more public keys for sampling
-- `SamplePublicKeys` returns a sample of entity B's public keys for entity A to use
+- `SamplePublicKeys` returns a sample of entity B's reader public keys for entity A to use
 
 In order to preserve the historical record, public keys can only be added and disabled, but not deleted.
 
@@ -60,7 +60,7 @@ DataStore will provide highly-available, fast storage for the service, though we
 
 Since the keys will be stored in just a single table with basic filtering and CRUD operations, DataStore's API should suffice, and it's high-availability and fast read/write performance should allow it to handle an increasing user load better than Postgres. Since DataStore is fully managed instead of partially managed (like Postgres via Google Cloud SQL), it should have slightly lower operational load. While we have seen reasonable Postgres performance up to 1B rows in a table, if we have strong user growth over first few years, we will hit that barrier.
 
-The most compelling reason to consider Postgres here is its superior incremental backup capability, which is fairly turnkey. DataStore support bulk export and import operations, but they are eventually consistent and dump/reload everything in a table (i.e., not incremental). This bulk export means that backups more frequent than once a day are probably not reasonable, both for performance and cost. An alternative would be to write out own incremental backup utility to query on a low-cardinally, monotonically-increasing value (like date a row was modified). Restore operations would still involve loading everything back into the instance, but hopefully that would be quite rare.
+The most compelling reason to consider Postgres here is its superior incremental backup capability, which is fairly turnkey. DataStore supports bulk export and import operations, but they are eventually consistent and dump/reload everything in a table (i.e., not incremental). This bulk export means that backups more frequent than once a day are probably not reasonable, both from performance and cost. An alternative would be to write out own incremental backup utility to query on a low-cardinally, monotonically-increasing value (like date a row was modified). Restore operations would still involve loading everything back into the instance, but hopefully that would be quite rare.
 
 We think it's reasonable to assume that the combination of a very simple data schema, fully-managed infra (so no upgrades, etc), and bulk export/import mean that DataStore will be safe enough for a while to use until we can implement our own incremental backup solution for it.
 
@@ -82,15 +82,15 @@ We will make use of DataStore's `GetMulti` and `PutMulti` operations to make get
 
 #### key sampling
 
-Multiple keys per entity give anonymity when every Libri data exchange is public. Knowing that author pub key X sent something to reader pub key Y does not tell you who is sending data to whom, unless those entities publish their public keys somewhere else. But if every entity just used one public key, it might be possible to re-identify entities based solely on who is sharing data with whom. To thwart any malicious activity like this, each entity has many public keys, say 64 author and 64 reader, so reidentification becomes practically unfeasible. 
+Multiple keys per entity give anonymity when every Libri data exchange is public. Knowing that author pub key X sent something to reader pub key Y does not tell you who is sending data to whom, unless those entities publish their public keys somewhere else. But if every entity just used one public key, it might be possible to re-identify entities based solely on who is sharing data with whom. To thwart any malicious activity like this, each entity has many public keys, say 64 author and 64 reader, so reidentification becomes practically infeasible. 
 
-When an entity A wants to send data to entity B, A requests a sample of B's keys (say, 8) and then randomly selects a key from that sample to use for each exchange. A malicious client intent on discovering all of B's reader public keys (so as to re-identify all their data exchanges) might request many samples and with enough requests indeed get every one. To thwart this possibility, A only ever sees a certain number (say, 8) of B's keys. This number is thus the maximum number of keys that A can sample for B. If B rotates their keys, adding some new ones and disabling others, A will get some/all different keys after this rotation, but it will still always be a subset of B's full key-set.
+When entity A wants to send data to entity B, A requests a sample of B's keys (say, 8) and then randomly selects a key from that sample to use for each exchange. A malicious client intent on discovering all of B's reader public keys (so as to re-identify all their data exchanges) might request many samples and with enough requests indeed get every one. To thwart this possibility, A only ever sees a certain number (say, 8) of B's keys. This number is thus the maximum number of keys that A can sample for B. If B rotates their keys, adding some new ones and disabling others, A will get some/all different keys after this rotation, but it will still always be a subset of B's full key-set.
 
 One approach to implementing these sampling limitations would be to split each entity's keys up into batches of 8, say, and store which batch every other entity has access to. But storing and updating that access is a bit annoying, so we'd prefer to avoid it if we can. Instead, we propose the following when A requests a sample of B's keys:
 - service get's all of B's active reader keys from storage (e.g., 64 keys)
 - service then computes the SHA256-HMAC of each key using B's entity ID as the MAC key
 - keys are ordered by these MACs and the first 8 are available for sampling
 
-This approach does not require storing ACLs between pairs of entities and also evolves easily as new keys are added and old keys are disabled. It also guarantees that for a fixed set of B's keys, A always samples from the same subset of 8. 
+This approach does not require storing ACLs between pairs of entities and also evolves easily as new keys are added and old keys are disabled. It also guarantees that for a fixed set of B's keys, A always samples from the same subset of 8. It also gives a different subset for every requesting entity.
 
 
