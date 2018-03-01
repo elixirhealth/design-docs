@@ -80,7 +80,7 @@ It will also have the following audit fields:
 
 We will make use of DataStore's `GetMulti` and `PutMulti` operations to make getting and adding/updating sets of keys efficient.
 
-#### key sampling
+#### Key sampling
 
 Multiple keys per entity give anonymity when every Libri data exchange is public. Knowing that author pub key X sent something to reader pub key Y does not tell you who is sending data to whom, unless those entities publish their public keys somewhere else. But if every entity just used one public key, it might be possible to re-identify entities based solely on who is sharing data with whom. To thwart any malicious activity like this, each entity has many public keys, say 64 author and 64 reader, so reidentification becomes practically infeasible. 
 
@@ -92,5 +92,33 @@ One approach to implementing these sampling limitations would be to split each e
 - keys are ordered by these MACs and the first 8 are available for sampling
 
 This approach does not require storing ACLs between pairs of entities and also evolves easily as new keys are added and old keys are disabled. It also guarantees that for a fixed set of B's keys, A always samples from the same subset of 8. It also gives a different subset for every requesting entity.
+
+#### Roadmap
+
+- DataStore storer handles Adds and Gets for multiple public keys
+- flesh out service code and (minimal) endpoint logic for `AddPublicKeys` and `GetPublicKeys` endpoints
+- DataStore storer handles GetEntity for getting all keys for given entity ID
+- flesh out service code for `SamplePublicKeys` endpoint
+	- most of work will be implementing the HMAC sampler
+- add memory storer
+- add acceptance tests
+- add CLI and local demo --> MVP service at this point
+- add functionality to store and server to support `DisablePublicKeys`
+
+Although we know we need to support key rotation (via `DisablePublicKeys`), it is not strictly necessary for the initial MVP, so we won't implement it initially. We will, however, include the `disabled` field (with value `false`) in the initial public key details object stored in DataStore to make working with new values of `disabled = true` easier down the road.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
