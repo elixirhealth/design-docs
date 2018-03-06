@@ -73,7 +73,7 @@ The Users domain will contain two services:
 	- endpoints
 		- get updates within a given date window
 	- storage: none
-		- service is stateless, collecting data from Catalog and Access services described below
+		- service is stateless, collecting data from Catalog and Key services described below
 
 The Entities domain will contain two services:
 - *Directory* manages entity data
@@ -87,7 +87,7 @@ The Entities domain will contain two services:
 		- DB triggers make auditing changes easy
 		- might/prob want to be able to do joins
 		- incremental backups are easy
-- *Access* manages entity public keys
+- *Key* manages entity public keys
 	- endpoints
 		- add, delete, sample entity author and reader public keys
 	- storage: GCP DataStore
@@ -149,7 +149,7 @@ Below is a diagram of these services and their interactions.
        └┤ Librarians  │     │                          │ ┌ ─ ─ ─ ─ ┼ ─ ─ ─ ─│─ ─ ─ ─ ┐ ┌ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─
   │     └─────┬───────┘     ▼                                      ▼        │                    ▼               ▼        │
               │      ┌─────────────┐   ┌─────────────┐ │ │  ┌─────────────┐ │        │ │  ┌─────────────┐ ┌─────────────┐
-  │           └─────▶│   Courier   │──▶│   Catalog   │◀─────│  Timeline   │─┼────────────▶│   Access    │ │  Directory  │ │
+  │           └─────▶│   Courier   │──▶│   Catalog   │◀─────│  Timeline   │─┼────────────▶│     Key     │ │  Directory  │ │
                      └─────────────┘   └─────────────┘ │ │  └─────────────┘ │        │ │  └─────────────┘ └─────────────┘
   │                         │                 │                             │                    │               │        │
                             ▼                 ▼        │ │                  ▼        │ │         ▼               ▼
