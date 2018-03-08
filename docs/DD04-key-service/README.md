@@ -72,8 +72,8 @@ Public keys will be represented in DataStore in the `public_key` kind with the f
 - `disabled` is a boolean flag indicating whether the public key has been disabled (and thus should not be sample-able)
 
 It will also have the following audit fields:
-- `added_time` is the epoch timestamp (in micros) of when the key was added
-- `disabled_time` is the epoch time (micros) of when the key was disabled
+- `added_time` is when the key was added
+- `disabled_time` is when the key was disabled
 - `modified_time` is the `added_time` if `disabled_time` is empty, otherwise it is `disabled_time`
 - `modified_date` is the epoch date (days since epoch)
 	- will mostly be useful down the road for filtering rows for incremental backups
