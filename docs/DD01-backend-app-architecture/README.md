@@ -58,7 +58,7 @@ The three categories of frontend requests imply three separate domains for backe
 All frontend requests will initially go to the Circulation aggregation/routing service. The service will be very thin, containing no business logic. It's entire job is to route frontend requests to the appropriate backend service(s). 
 
 The Users domain will contain two services:
-- *Identity* manages user data
+- *User* manages user data
 	- endpoints
 		- lookup and CRUD name, contact info, client devices
 		- lookup and CRUD user -> entity relationships
@@ -154,12 +154,12 @@ Below is a diagram of these services and their interactions.
   │                         │                 │                             │                    │               │        │
                             ▼                 ▼        │ │                  ▼        │ │         ▼               ▼
   │                  ╔═════════════╗   ╔═════════════╗               ┌─────────────┐      ╔═════════════╗ ╔═════════════╗ │
-                     ║  DataStore  ║   ║  DataStore  ║ │ │           │  Identity   │ │ │  ║  DataStore  ║ ║  Postgres   ║
+                     ║  DataStore  ║   ║  DataStore  ║ │ │           │     User    │ │ │  ║  DataStore  ║ ║  Postgres   ║
   │                  ╚═════════════╝   ╚═════════════╝               └─────────────┘      ╚═════════════╝ ╚═════════════╝ │
    ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ │                  │        │ └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
                         Documents                                           ▼                        Entities
                                                          │           ╔═════════════╗ │
-                                                                     ║  Postgres   ║
+                                                                     ║  Datastore  ║
                                                          │           ╚═════════════╝ │
                                                           ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
                                                                      Users
